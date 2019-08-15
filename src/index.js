@@ -32,17 +32,8 @@ async function run() {
   }
 
   // Monkey Patch the superagent for proxy use
-  const proxy = params.proxy_url;
-  if (proxy) {
-    const proxyAgent = new HttpProxyAgent(proxy);
-    const proxyAgentSsl = new HttpsProxyAgent(proxy);
-    const OrigRequest = superagent.Request;
-    superagent.Request = function RequestWithAgent(method, url) {
-      const req = new OrigRequest(method, url);
-      log.info(`Setting proxy for ${method} to ${url}`);
-      if (url.startsWith('https')) return req.agent(proxyAgentSsl);
-      return req.agent(proxyAgent);
-    };
+  if(params.proxy_url) {
+    configureProxy(params.proxy_url);
   }
 
   log.debug(`Start command ${params._[0]}`);
@@ -75,11 +66,26 @@ if (require.main === module) {
     });
 }
 
+// Allow the proxy to be configured when initialing tasks through code 
+function configureProxy(proxy_url) {
+  const proxyAgent = new _httpProxyAgent2.default(proxy_url);
+  const proxyAgentSsl = new _httpsProxyAgent2.default(proxy_url);
+  const OrigRequest = _superagent2.default.Request;
+  _superagent2.default.Request = function RequestWithAgent(method, url) {
+    const req = new OrigRequest(method, url);
+    _logger2.default.info(`Setting proxy for ${method} to ${url}`);
+    if (url.startsWith('https')) return req.agent(proxyAgentSsl);
+    return req.agent(proxyAgent);
+  };
+ }
+
 
 // Export commands to be used programmatically
 module.exports = {
   deploy: commands.import,
   dump: commands.export,
   import: commands.import,
-  export: commands.export
+  export: commands.export,
+  configureProxy: configureProxy
 };
+
